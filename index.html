@@ -155,6 +155,7 @@ table.ref td.hit{background:var(--accent-soft);font-weight:800}
       <input id="dpPct" class="num big" type="number" step="0.01" inputmode="decimal" value="20">
       <input id="dpRp" class="num big money" inputmode="numeric" value="36.620.000" hidden>
     </div>
+    <div class="seg" id="dpChips" style="margin-top:8px"></div>
     <p class="hint" id="dpEcho"></p>
   </section>
   <section class="res" data-tab-view="angs" id="resAngs"></section>
@@ -203,7 +204,7 @@ table.ref td.hit{background:var(--accent-soft);font-weight:800}
     <div class="fields">
       <label class="f full">Cabang ACC<select id="cabang"></select></label>
       <label class="f">Kategori rate
-        <select id="kat"><option>LUXURY</option><option selected>REGULAR 1</option><option>REGULAR 2</option><option>COMMERCIAL 1</option><option>COMMERCIAL 2</option></select>
+        <select id="kat"><option selected>PASSENGER</option><option>KOMERSIL PICK UP</option></select>
       </label>
       <label class="f">Bunga counter (%)<input id="bCounter" class="num" type="number" step="0.01" inputmode="decimal" value="8"></label>
       <div class="full"><div class="seg" id="bMode"><button aria-pressed="true" data-v="auto">Otomatis ikut DP</button><button aria-pressed="false" data-v="manual">Isi manual</button></div></div>
@@ -237,7 +238,7 @@ table.ref td.hit{background:var(--accent-soft);font-weight:800}
     </div>
   </section>
   <section class="panel" data-tab-view="set">
-    <h2>Tabel counter rate</h2>
+    <h2>Tabel rate terbaru (tanpa benefit, batas bawah)</h2>
     <p class="hint" style="margin:0 0 8px" id="crInfo"></p>
     <div class="tbl-wrap"><table class="ref" id="crTbl"></table></div>
     <table class="rows" style="margin-top:10px"><tbody id="effRows"></tbody></table>
@@ -319,9 +320,8 @@ function calc(p, dpOverride){
   r.cr = counterRate(p, r.dpPct, p.kat);
   r.crLow = null;
   if (!r.cr){ // DP di bawah band terendah: pakai rate band terendah yang tersedia (paling mahal)
-    const ti = [12,24,36,48,60].indexOf(p.tenor*12) + 1, add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl] || 0;
-    const rw = DATA.cr[p.addm][p.kat].filter(x => x[ti] != null).pop();
-    if (rw) r.crLow = {rate: rw[ti] + add, band: rw[0]};
+    const T = RATE[p.kat], rw = T && T[p.addm][p.tenor];
+    if (rw) r.crLow = {rate: rw[0]/100, band: T.bands[0]};
   }
   r.bAutoOk = p.bAuto && !!(r.cr || r.crLow);
   r.bCounter = r.bAutoOk ? (r.cr || r.crLow).rate : p.bCounter;
@@ -378,12 +378,22 @@ function benefit(p, r){
 }
 
 /* Counter rate */
+/* Tabel rate terbaru (RATE w/o BENEFIT, batas bawah) — per tenor (tahun), kolom mengikuti urutan bands */
+const RATE = {
+  'PASSENGER': { bands:[0.20,0.25,0.30], tenors:[1,2,3,4,5],
+    ADDM:{1:[5.20,3.70,3.70],2:[5.50,4.00,3.70],3:[6.40,4.40,4.00],4:[7.30,5.15,4.65],5:[7.50,6.00,5.50]},
+    ADDB:{1:[6.20,4.50,4.50],2:[6.40,4.70,4.70],3:[6.90,5.00,4.70],4:[7.80,5.60,5.00],5:[8.20,6.50,6.15]} },
+  'KOMERSIL PICK UP': { bands:[0.25,0.30], tenors:[1,2,3,4],
+    ADDM:{1:[5.98,5.48],2:[6.58,6.08],3:[7.55,7.05],4:[8.36,7.84]},
+    ADDB:{1:[7.28,6.78],2:[7.38,6.88],3:[8.16,7.66],4:[8.98,8.40]} }
+};
+const minDpOf = kat => (RATE[kat] || RATE.PASSENGER).bands[0];
 function counterRate(p, dpPct, kat){
-  const tbl = DATA.cr[p.addm][kat]; const ti = [12,24,36,48,60].indexOf(p.tenor*12) + 1;
-  const row = tbl.find(rw => dpPct + 1e-6 > rw[0]);
-  if (!row || row[ti] == null) return null;
-  const add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl] || 0;
-  return {base: row[ti], add, rate: row[ti] + add, band: row[0]};
+  const T = RATE[kat]; if (!T) return null;
+  const row = T[p.addm][p.tenor]; if (!row) return null;
+  let i = -1; T.bands.forEach((b, k) => { if (dpPct + 1e-6 >= b) i = k; });
+  if (i < 0) return null;
+  return {base: row[i]/100, add: 0, rate: row[i]/100, band: T.bands[i]};
 }
 
 /* Bunga efektif dari flat (RATE Excel) */
@@ -417,9 +427,9 @@ function row(label, val, note=''){ return `<tr><td>${label}${note?`<small>${note
 function alertsFor(p, r){
   const al = [];
   if (r.dp < 0) al.push(['bad','DP lebih besar dari harga OTR.']);
-  else if (r.dpPct < 0.15) al.push(['bad',`DP ${pct(r.dpPct,1)} di bawah 15%.`]);
-  else if (p.jenis==='PASSENGER' && r.dpPct < 0.2) al.push(['','DP di bawah 20% untuk passenger. Cek ketentuan uang muka minimum.']);
-  if (r.crLow && p.bAuto) al.push(['',`DP di bawah tabel counter rate, bunga memakai band DP ${pct(r.crLow.band,0)}.`]);
+  const minDp = minDpOf(p.kat);
+  if (r.dp >= 0 && r.dpPct + 1e-6 < minDp) al.push(['bad',`DP minimum ${p.kat} adalah ${pct(minDp,0)}. Bunga dihitung dengan rate DP ${pct(minDp,0)}.`]);
+  if (RATE[p.kat] && !RATE[p.kat].tenors.includes(p.tenor)) al.push(['bad',`${p.kat} maksimal tenor ${Math.max(...RATE[p.kat].tenors)} tahun.`]);
   if (p.bPdc > 0.02 + 1e-9) al.push(['bad',`Benefit PDC ${pct(p.bPdc)} melebihi maksimal 2%.`]);
   const b = benefit(p, r); if (b.ratio > 0.15) al.push(['bad',`Benefit dealer ${pct(b.ratio)} melebihi batas OJK 15%.`]);
   return al.map(([c,t])=>`<div class="alert ${c}">${t}</div>`).join('');
@@ -455,10 +465,12 @@ function render(){
   const rA = calc(p);
   const target = parseRp($('tAngs').value);
   const dpS = target > 0 ? solveByAngs(p, target) : null;
-  const rD = dpS != null ? calc(p, dpS) : null;
+  let rD = dpS != null ? calc(p, dpS) : null;
+  if (rD && rD.dpPct + 1e-6 < minDpOf(p.kat)){ rD = calc(p, ceilTo(minDpOf(p.kat) * p.otrNet, 1000)); rD.minApplied = true; }
   last = {p, rA, rD, target};
 
   $('topSub').textContent = `ACC ${p.cab} · ${p.bAuto ? 'bunga otomatis' : 'bunga manual'}`;
+  $('dpChips').innerHTML = RATE[p.kat].bands.map(b => `<button data-dp="${b*100}" aria-pressed="${p.dpMode==='pct' && Math.abs(p.dpPct-b)<1e-6}">DP ${b*100}%</button>`).join('');
   $('dpEcho').textContent = p.dpMode === 'pct' ? `= ${rp(rA.dp)}` : `= ${pct(rA.dpPct)} dari OTR nett`;
 
   // Cari Angsuran
@@ -471,7 +483,7 @@ function render(){
   if (!target) $('resDp').innerHTML = `<div class="k">DP yang dibutuhkan</div><p class="hint">Isi angsuran yang diinginkan konsumen.</p>`;
   else if (!rD) $('resDp').innerHTML = `<div class="k">DP yang dibutuhkan</div><div class="v" style="font-size:22px">Tidak tercapai</div><p class="hint">Angsuran ${rp(target)} terlalu kecil untuk OTR dan tenor ini.</p>`;
   else $('resDp').innerHTML = `<div class="k">DP yang dibutuhkan</div><div class="v">${rp(rD.dp)}</div>
-    <div class="s"><span class="pill ${rD.dpPct<0.15?'bad':rD.dpPct<0.2?'warn':'good'}">${pct(rD.dpPct,1)}</span> dari OTR nett</div>
+    <div class="s"><span class="pill good">${pct(rD.dpPct,1)}</span> dari OTR nett${rD.minApplied ? ` · <b>DP minimum ${p.kat}</b>, angsuran jadi lebih kecil dari target` : ''}</div>
     <div class="stats"><div><span>Total bayar pertama</span><b>${rp(rD.tdp)}</b></div><div><span>Angsuran ${rD.nBayar}x</span><b>${rp(rD.angs)}</b></div></div>
     ${chips(p, rD)}<div class="alerts">${alertsFor(p, rD)}</div>${rincian(p, rD)}${ACT('dp')}`;
 
@@ -511,11 +523,10 @@ function render(){
   save();
 }
 function renderRef(p, r){
-  const cr = r.cr, tbl = DATA.cr[p.addm][p.kat], ti = [12,24,36,48,60].indexOf(p.tenor*12)+1, add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl]||0;
-  const band = (cr || r.crLow || {}).band;
-  $('crInfo').textContent = `${p.kat} · ${p.addm} · ${p.cab} level ${p.lvl}${add?` (+${pct(add)})`:''}. Sel yang disorot = DP ${pct(r.dpPct,0)} dan tenor ${p.tenor*12} bulan di tab Cari Angsuran.`;
-  $('crTbl').innerHTML = `<tr><th>DP ≥</th><th>12</th><th>24</th><th>36</th><th>48</th><th>60</th></tr>` +
-    tbl.map(rw => `<tr><td>${pct(rw[0],0)}</td>${[1,2,3,4,5].map(i=>`<td class="${rw[0]===band && i===ti?'hit':''}">${rw[i]==null?'—':pct(rw[i]+add)}</td>`).join('')}</tr>`).join('');
+  const T = RATE[p.kat], band = (r.cr || r.crLow || {}).band;
+  $('crInfo').textContent = `${p.kat} · ${p.addm}. Sel yang disorot sesuai DP dan tenor di tab Cari Angsuran.`;
+  $('crTbl').innerHTML = `<tr><th>Tenor</th>${T.bands.map(b=>`<th>DP ${pct(b,0)}</th>`).join('')}</tr>` +
+    T.tenors.map(t => `<tr><td>${t*12} bln</td>${T[p.addm][t].map((v,i)=>`<td class="${T.bands[i]===band && t===p.tenor?'hit':''}">${pct(v/100)}</td>`).join('')}</tr>`).join('');
   $('effRows').innerHTML = row('Bunga jual flat → efektif', `${pct(r.bunga)} → ${pct(effRate(r.bunga, p.tenor, p.addm==='ADDM'))}`) +
     row('Counter flat → efektif', `${pct(r.bCounter)} → ${pct(effRate(r.bCounter, p.tenor, p.addm==='ADDM'))}`);
 }
@@ -559,6 +570,14 @@ document.querySelectorAll('.money').forEach(el => {
 document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
 function seg(id, cb){ $(id).addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; setSeg(id, b.dataset.v); cb && cb(b.dataset.v); render(); }); }
 seg('tenorSeg', () => fillCover());
+$('dpChips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+  setSeg('dpMode','pct'); $('dpPct').hidden = false; $('dpRp').hidden = true; $('dpPct').value = b.dataset.dp; render(); });
+function cekTenor(){ // tenor yang tidak ada di tabel kategori: matikan & geser ke tenor terpanjang yang ada
+  const T = RATE[$('kat').value] || RATE.PASSENGER, max = Math.max(...T.tenors);
+  document.querySelectorAll('#tenorSeg button').forEach(b => { b.disabled = !T.tenors.includes(+b.dataset.v); b.style.opacity = b.disabled ? .35 : ''; });
+  if (+segVal('tenorSeg') > max){ setSeg('tenorSeg', max); fillCover(); }
+}
+$('kat').addEventListener('change', () => { cekTenor(); render(); });
 seg('addm');
 seg('bMode');
 seg('dpMode', v => {
@@ -570,18 +589,18 @@ $('jenis').addEventListener('change', () => { fillCover($('jenis').value === 'PA
 function katDariType(t){
   const T = String(t).toUpperCase().replace(/\s+/g,' ');
   if (/GRAN ?MAX|GRANDMAX|\bGM ?(PU|BV|MB)\b/.test(T)){
-    if (/\bMB\b|MINIBUS/.test(T)) return {kat:'COMMERCIAL 1', jenis:'PASSENGER'};
-    return {kat:'COMMERCIAL 1', jenis:'TRUCK / PU / BOX'};
+    if (/\bMB\b|MINIBUS/.test(T)) return {kat:'PASSENGER', jenis:'PASSENGER'};
+    return {kat:'KOMERSIL PICK UP', jenis:'TRUCK / PU / BOX'};
   }
-  if (/\b(PU|PICK ?UP|BV|BLIND ?VAN|BOX)\b/.test(T)) return {kat:'COMMERCIAL 1', jenis:'TRUCK / PU / BOX'};
-  if (/AYLA|SIGRA/.test(T)) return {kat:'REGULAR 2', jenis:'PASSENGER'};
-  if (T.trim()) return {kat:'REGULAR 1', jenis:'PASSENGER'};
+  if (/\b(PU|PICK ?UP|BV|BLIND ?VAN|BOX)\b/.test(T)) return {kat:'KOMERSIL PICK UP', jenis:'TRUCK / PU / BOX'};
+  if (T.trim()) return {kat:'PASSENGER', jenis:'PASSENGER'};
   return null;
 }
 $('type').addEventListener('input', () => {
   const k = katDariType($('type').value); if (!k) return;
   $('kat').value = k.kat;
   if ($('jenis').value !== k.jenis){ $('jenis').value = k.jenis; fillCover(k.jenis === 'PASSENGER' ? '-' : `${segVal('tenorSeg')} thn TLO`); }
+  cekTenor();
   $('katInfo').textContent = `Otomatis dari type: ${k.kat} · ${k.jenis}. Bisa diganti di sini.`;
   render();
 });
@@ -606,6 +625,7 @@ function load(){
   fillCover(o.cover);
   const m = segVal('dpMode'); $('dpPct').hidden = m !== 'pct'; $('dpRp').hidden = m !== 'rp';
   if (o.basis) state.basis = o.basis;
+  if (!RATE[$('kat').value]) $('kat').value = (katDariType($('type').value) || {kat:'PASSENGER'}).kat;
   return o.tab;
 }
 $('btnReset').addEventListener('click', () => {
@@ -619,6 +639,7 @@ try { if ('serviceWorker' in navigator && location.protocol === 'https:' && wind
 
 fillCabang(); fillCover('1 thn AR, 4 thn TLO');
 const tab0 = load();
+cekTenor();
 showTab(['angs','dp','pdc','set'].includes(tab0) ? tab0 : 'angs');
 </script>
 </body></html>

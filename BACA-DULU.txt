@@ -33,4 +33,4 @@ D. CATATAN
   alamatnya di Safari biasa lalu ketuk Cetak A4 (AirPrint).
 - Isian terakhir tersimpan di HP masing-masing.
 - MEMPERBARUI: unggah ulang index.html (dan sw.js) ke repo dengan nama
-  yang sama, lalu naikkan VERSI di baris pertama sw.js (acc-v4 > acc-v5).
+  yang sama, lalu naikkan VERSI di baris pertama sw.js (acc-v5 > acc-v6).
