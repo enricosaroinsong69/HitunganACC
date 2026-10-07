@@ -1,0 +1,36 @@
+HITUNGAN & BENEFIT ACC — CARA PASANG DI iPHONE
+==============================================
+
+iPhone hanya bisa memasang aplikasi web dari alamat https (bukan dari berkas).
+Jadi folder ini diunggah dulu ke GitHub Pages, sama seperti aplikasi BAST.
+
+A. UNGGAH KE GITHUB (sekali saja)
+1. Buka github.com (akun enricosaroinsong69) > New repository.
+2. Nama repo: HitunganACC  · pilih Public · Create repository.
+3. Klik "uploading an existing file", lalu seret SEMUA ISI folder ini
+   (index.html, sw.js, manifest.webmanifest, apple-touch-icon.png,
+   icon-192.png, icon-512.png) — isinya, bukan foldernya. Commit changes.
+4. Settings > Pages > Source: Deploy from a branch > Branch: main / (root) > Save.
+5. Tunggu 1-2 menit. Alamat aplikasi:
+   https://enricosaroinsong69.github.io/HitunganACC/
+   (huruf besar-kecil harus persis)
+
+B. PASANG DI iPHONE
+1. Buka alamat di atas dengan SAFARI (bukan Chrome/WA).
+2. Ketuk tombol Bagikan (kotak dengan panah ke atas) di bawah layar.
+3. Gulir, pilih "Tambahkan ke Layar Utama" > Tambah.
+4. Ikon "Hitungan ACC" muncul di layar utama, terbuka layar penuh
+   seperti aplikasi biasa dan tetap jalan tanpa sinyal setelah dibuka sekali.
+
+C. PASANG DI ANDROID
+Buka alamat yang sama di Chrome > menu titik tiga > "Instal aplikasi"
+atau "Tambahkan ke layar utama".
+
+D. CATATAN
+- Di iPhone, tombol "Cetak A4" disembunyikan saat dibuka dari ikon layar
+  utama karena iOS tidak mengizinkan cetak dari mode itu. Pakai tombol
+  "Bagikan…" atau "Salin teks untuk WhatsApp". Kalau perlu cetak, buka
+  alamatnya di Safari biasa lalu ketuk Cetak A4 (AirPrint).
+- Isian terakhir tersimpan di HP masing-masing.
+- MEMPERBARUI: unggah ulang index.html (dan sw.js) ke repo dengan nama
+  yang sama, lalu naikkan VERSI di baris pertama sw.js (acc-v4 > acc-v5).
