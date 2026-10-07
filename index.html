@@ -1,0 +1,699 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hitungan ACC">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+</head><body><title>Hitungan & Benefit ACC</title>
+<meta name="theme-color" content="#123a4a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: satu kolom di HP; di layar lebar input kiri, hasil kanan. Angka pakai mono agar sejajar. */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --sunk:#f5f8f7; --fg:#14262c; --muted:#5d7178; --line:#d3dedc;
+  --accent:#0f6b6b; --accent-ink:#ffffff; --accent-soft:#dcefed; --head:#123a4a;
+  --good:#1d7a43; --good-soft:#dff3e6; --warn:#a35c00; --warn-soft:#fbecd5; --bad:#b3261e; --bad-soft:#fbe1de;
+  --f-ui:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1719; --surface:#142226; --sunk:#101c1f; --fg:#e3eeec; --muted:#93a8ad; --line:#26393d;
+  --accent:#4fbdb3; --accent-ink:#06201f; --accent-soft:#173a3a; --head:#0a2530;
+  --good:#6fd39a; --good-soft:#163526; --warn:#f0b35a; --warn-soft:#3a2a12; --bad:#ff8a80; --bad-soft:#3d1a18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1719; --surface:#142226; --sunk:#101c1f; --fg:#e3eeec; --muted:#93a8ad; --line:#26393d;
+  --accent:#4fbdb3; --accent-ink:#06201f; --accent-soft:#173a3a; --head:#0a2530;
+  --good:#6fd39a; --good-soft:#163526; --warn:#f0b35a; --warn-soft:#3a2a12; --bad:#ff8a80; --bad-soft:#3d1a18; color-scheme:dark}
+*{box-sizing:border-box} [hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.45}
+.top{background:var(--head);color:#fff;padding:14px 16px 12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top .in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;font-weight:800;letter-spacing:.2px}
+.top .sub{font-size:12px;opacity:.75}
+.top .kpi{margin-left:auto;text-align:right;font-family:var(--f-num)}
+.top .kpi b{font-size:18px;display:block}
+.top .kpi span{font-size:11px;opacity:.75;font-family:var(--f-ui)}
+.tabs{display:flex;gap:4px;max-width:1180px;margin:10px auto 0;overflow-x:auto}
+.tabs button{flex:0 0 auto;background:transparent;border:0;color:#cfe3e3;font:600 13px var(--f-ui);padding:8px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--bg);color:var(--fg)}
+main{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:16px 48px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,430px) minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 16px;min-width:0}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:700}
+.panel h2 + .hint{margin-top:-6px}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.fields .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600;min-width:0}
+input,select{font:500 16px var(--f-ui);color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+input.num{font-family:var(--f-num);text-align:right}
+input[readonly]{background:var(--accent-soft);border-color:transparent;font-weight:700}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--fg);font:600 13px var(--f-ui);padding:7px 4px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.inline{display:flex;gap:8px;align-items:center}
+.inline > *{flex:1;min-width:0}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+details.more{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+details.more summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent)}
+details.more .fields{margin-top:10px}
+
+/* Lembar simulasi */
+.sheet{font-size:14px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:2px solid var(--fg);padding-bottom:8px;margin-bottom:8px;flex-wrap:wrap}
+.sheet .hd .t{font-weight:800;font-size:15px;letter-spacing:.04em}
+.sheet .hd .c{font-size:12px;color:var(--muted);text-align:right}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px;margin-bottom:10px}
+.meta dt{color:var(--muted)} .meta dd{margin:0;font-weight:600}
+table.rows{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.rows td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.rows td.v{text-align:right;font-family:var(--f-num);white-space:nowrap;padding-left:8px}
+table.rows td.op{width:18px;text-align:center;color:var(--muted);font-family:var(--f-num)}
+table.rows td small{color:var(--muted);font-size:11.5px;display:block}
+table.rows tr.sum td{border-bottom:0;border-top:2px solid var(--fg);font-weight:800;padding-top:7px}
+table.rows tr.sec td{border-bottom:0;padding-top:12px;font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.big div{background:var(--accent-soft);border-radius:8px;padding:10px 12px;min-width:0}
+.big span{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:block}
+.big b{font-family:var(--f-num);font-size:clamp(17px,4.6vw,22px);display:block;overflow-wrap:anywhere}
+.big em{font-style:normal;font-size:12px;color:var(--muted)}
+.contact{font-size:12.5px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 13.5px var(--f-ui);padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.alerts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.alert{font-size:12.5px;padding:7px 10px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:600}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.meter{height:10px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;position:relative;overflow:hidden;margin:8px 0 4px}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--good);border-radius:999px}
+.meter i.bad{background:var(--bad)}
+.meter s{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--fg);text-decoration:none}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--f-num)}
+.ojk{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ojk b{font-family:var(--f-num);font-size:28px}
+.result-dp{background:var(--accent-soft);border-radius:8px;padding:12px;margin-top:10px}
+.result-dp b{font-family:var(--f-num);font-size:20px}
+.tbl-wrap{overflow-x:auto}
+table.ref{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:100%}
+table.ref th,table.ref td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.ref th{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+table.ref td:first-child,table.ref th:first-child{text-align:left}
+table.ref td.hit{background:var(--accent-soft);font-weight:800}
+table.ref td{font-family:var(--f-num)} table.ref td:first-child{font-family:var(--f-ui)}
+[data-view]{display:none} [data-view].on{display:block}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;color:#000}
+  .top,.no-print,.grid > .stack:first-child{display:none!important}
+  main{padding:0;max-width:none} .grid{display:block}
+  [data-view]{display:none!important} #v-sim{display:block!important}
+  .panel{border:0;padding:0}
+  .big div{background:#eee}
+}
+</style>
+
+<header class="top">
+  <div class="in">
+    <div>
+      <h1>Hitungan &amp; Benefit ACC</h1>
+      <div class="sub" id="topSub">ACC MANADO · Wilayah 3 · C2</div>
+    </div>
+    <div class="kpi"><b id="kpiAngs">–</b><span>angsuran / bulan</span></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="sim">Simulasi</button>
+    <button role="tab" aria-selected="false" data-tab="dp">Cari DP</button>
+    <button role="tab" aria-selected="false" data-tab="ben">Benefit &amp; OJK</button>
+    <button role="tab" aria-selected="false" data-tab="ref">Counter Rate</button>
+  </nav>
+</header>
+
+<main>
+<div class="grid">
+  <!-- ===== INPUT ===== -->
+  <div class="stack">
+    <section class="panel">
+      <h2>Kendaraan</h2>
+      <div class="fields">
+        <label class="f">Type<input id="type" list="typeList" placeholder="cth. GRAN MAX PU 1.5" autocomplete="off"></label>
+        <label class="f">Kategori rate
+          <select id="kat"><option>LUXURY</option><option selected>REGULAR 1</option><option>REGULAR 2</option><option>COMMERCIAL 1</option><option>COMMERCIAL 2</option></select>
+        </label>
+        <datalist id="typeList"><option value="AYLA"><option value="SIGRA"><option value="XENIA"><option value="ROCKY"><option value="TERIOS"><option value="SIRION"><option value="LUXIO"><option value="GRAN MAX PU"><option value="GRAN MAX BV"><option value="GRAN MAX MB"></datalist>
+        <p class="hint full" id="katInfo" style="margin-top:-4px">Kategori mengikuti type secara otomatis, bisa diganti manual.</p>
+        <label class="f full">Jenis kendaraan (untuk tarif asuransi)
+          <select id="jenis">
+            <option>PASSENGER</option><option>TRUCK / PU / BOX</option><option>BUS / MICROBUS</option>
+          </select>
+        </label>
+        <label class="f">Harga OTR (Rp)<input id="otr" class="num money" inputmode="numeric" value="183.100.000"></label>
+        <label class="f">Discount dealer (Rp)<input id="disc" class="num money" inputmode="numeric" value="0"></label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Kredit</h2>
+      <div class="fields">
+        <div class="full">
+          <div class="seg" id="dpMode"><button aria-pressed="true" data-v="pct">DP dalam %</button><button aria-pressed="false" data-v="rp">DP dalam Rp</button></div>
+        </div>
+        <label class="f" id="wrapDpPct">DP (%)<input id="dpPct" class="num" type="number" step="0.01" inputmode="decimal" value="20"></label>
+        <label class="f" id="wrapDpRp" hidden>DP (Rp)<input id="dpRp" class="num money" inputmode="numeric" value="36.620.000"></label>
+        <label class="f">Tenor
+          <select id="tenor"><option value="1">1 tahun (12x)</option><option value="2">2 tahun (24x)</option><option value="3">3 tahun (36x)</option><option value="4">4 tahun (48x)</option><option value="5" selected>5 tahun (60x)</option></select>
+        </label>
+        <div class="full">
+          <div class="seg" id="addm"><button aria-pressed="false" data-v="ADDM">ADDM (bayar di muka)</button><button aria-pressed="true" data-v="ADDB">ADDB (bayar di belakang)</button></div>
+        </div>
+        <div class="full">
+          <div class="seg" id="bMode"><button aria-pressed="true" data-v="auto">Bunga otomatis ikut DP</button><button aria-pressed="false" data-v="manual">Isi manual</button></div>
+        </div>
+        <label class="f">Bunga counter (% flat/th)<input id="bCounter" class="num" type="number" step="0.01" inputmode="decimal" value="8"></label>
+        <label class="f">Benefit PDC (%, maks 2)<input id="bPdc" class="num" type="number" step="0.01" inputmode="decimal" value="2"></label>
+        <p class="hint full" id="bungaInfo">Bunga flat jual = 10,00% per tahun</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Asuransi &amp; Biaya</h2>
+      <div class="fields">
+        <label class="f full">Cabang ACC (menentukan wilayah tarif asuransi)
+          <select id="cabang"></select>
+        </label>
+        <label class="f full">Jenis asuransi
+          <select id="cover"></select>
+        </label>
+        <label class="f full">Pembayaran asuransi
+          <select id="insPay"><option>KREDIT FULL</option><option>TUNAI TAHUN 1</option><option>TUNAI FULL</option></select>
+        </label>
+        <label class="f">Premi ACP / Ass Jiwa
+          <select id="acp"><option>TIDAK</option><option>YA</option></select>
+        </label>
+        <label class="f">ACP dibayar
+          <select id="acpPay"><option>KREDIT</option><option>TUNAI</option></select>
+        </label>
+        <label class="f">Biaya admin (Rp)<input id="admin" class="num money" inputmode="numeric" value="950.000"></label>
+        <label class="f">Biaya polis (Rp)<input id="polis" class="num money" inputmode="numeric" value="50.000"></label>
+        <p class="hint full" id="insInfo"></p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Data Konsumen &amp; Sales</h2>
+      <div class="fields">
+        <label class="f full">Nama konsumen<input id="nama" placeholder="Nama konsumen"></label>
+        <label class="f">Merk<input id="merk" value="DAIHATSU"></label>
+        <label class="f">Tahun<input id="tahun" inputmode="numeric" value="2026"></label>
+        <label class="f">Nama SO<input id="so" placeholder="Nama salesman"></label>
+        <label class="f">Handphone<input id="hp" inputmode="tel" placeholder="08xx"></label>
+        <label class="f">Email<input id="email" inputmode="email" placeholder="opsional"></label>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== OUTPUT ===== -->
+  <div class="stack">
+    <!-- SIMULASI -->
+    <section class="panel" data-view id="v-sim">
+      <div class="alerts" id="alerts"></div>
+      <div class="sheet">
+        <div class="hd">
+          <div><div class="t">SIMULASI PERHITUNGAN PEMBIAYAAN</div><div class="hint" style="margin:2px 0 0" id="shSub"></div></div>
+          <div class="c" id="shCab">Astra Credit Companies<br>MANADO</div>
+        </div>
+        <dl class="meta" id="shMeta"></dl>
+        <div class="big">
+          <div><span>Angsuran / bulan</span><b id="bigAngs">–</b><em id="bigAngsNote"></em></div>
+          <div><span>Total bayar pertama</span><b id="bigTdp">–</b><em id="bigTdpNote"></em></div>
+        </div>
+        <table class="rows"><tbody id="shRows"></tbody></table>
+        <div class="contact" id="shContact"></div>
+      </div>
+      <div class="actions no-print">
+        <button class="btn" id="btnWa">Salin teks untuk WhatsApp</button>
+        <button class="btn ghost" id="btnShare" hidden>Bagikan…</button>
+        <button class="btn ghost" id="btnPrint" hidden>Cetak A4</button>
+      </div>
+    </section>
+
+    <!-- CARI DP -->
+    <section class="panel" data-view id="v-dp">
+      <h2>Cari DP dari angsuran</h2>
+      <p class="hint">Masukkan angsuran yang diinginkan konsumen. Aplikasi mencari DP terkecil yang angsurannya tidak melebihi angka itu, dengan tenor, bunga dan asuransi di sebelah kiri.</p>
+      <div class="inline" style="margin-top:10px">
+        <label class="f">Angsuran target (Rp)<input id="tAngs" class="num money" inputmode="numeric" value="4.500.000"></label>
+      </div>
+      <div class="result-dp" id="rAngs"></div>
+    </section>
+    <section class="panel" data-view id="v-dp2">
+      <h2>Cari DP dari total bayar pertama</h2>
+      <p class="hint">Masukkan dana yang dimiliki konsumen untuk pembayaran pertama (DP + admin + polis + biaya tunai lain).</p>
+      <div class="inline" style="margin-top:10px">
+        <label class="f">Total bayar pertama (Rp)<input id="tTdp" class="num money" inputmode="numeric" value="36.500.000"></label>
+      </div>
+      <div class="result-dp" id="rTdp"></div>
+    </section>
+
+    <!-- BENEFIT -->
+    <section class="panel" data-view id="v-ben">
+      <h2>Cek OJK (batas benefit dealer 15%)</h2>
+      <div class="ojk"><b id="ojkPct">–</b><span class="pill" id="ojkPill"></span></div>
+      <div class="meter"><i id="ojkBar"></i><s style="left:50%"></s></div>
+      <div class="scale"><span>0%</span><span>15%</span><span>30%</span></div>
+      <p class="hint">Rasio = total benefit dealer ÷ pendapatan ACC. Lebih dari 15% berarti benefit terlalu besar.</p>
+    </section>
+    <section class="panel" data-view id="v-ben2">
+      <h2>Pengaturan benefit</h2>
+      <div class="fields">
+        <label class="f">Refund asuransi (%)<input id="refund" class="num" type="number" step="0.1" inputmode="decimal" value="0"></label>
+        <label class="f">Provisi (% dari PH)<input id="provisi" class="num" type="number" step="0.1" inputmode="decimal" value="0"></label>
+        <label class="f">Porsi asuransi utk ACC (%)<input id="assAcc" class="num" type="number" step="1" inputmode="decimal" value="25"></label>
+        <label class="f">Standar admin (Rp)<input id="admStd" class="num money" inputmode="numeric" value="1.600.000"></label>
+      </div>
+      <details class="more" open>
+        <summary>Split rate salesman</summary>
+        <div class="fields">
+          <label class="f">Split PDC balik (%)<input id="spPdc" class="num" type="number" step="1" inputmode="decimal" value="49"></label>
+          <label class="f">Split selisih admin (%)<input id="spAdm" class="num" type="number" step="1" inputmode="decimal" value="0"></label>
+          <label class="f">Split refund asuransi (%)<input id="spRef" class="num" type="number" step="1" inputmode="decimal" value="0"></label>
+          <label class="f">Split provisi (%)<input id="spProv" class="num" type="number" step="1" inputmode="decimal" value="0"></label>
+        </div>
+      </details>
+    </section>
+    <section class="panel" data-view id="v-ben3">
+      <h2>Rincian</h2>
+      <table class="rows"><tbody id="benRows"></tbody></table>
+    </section>
+
+    <!-- REFERENSI -->
+    <section class="panel" data-view id="v-ref">
+      <h2>Counter rate referensi</h2>
+      <div class="result-dp" id="crBox"></div>
+      <p class="hint">Tabel counter rate new car (ADDM/ADDB) dari file, ditambah level kompetisi cabang: C2 +0,25%, C3 +0,5%, C4 +1%. Sel yang disorot sesuai DP, tenor dan cabang saat ini.</p>
+      <div class="tbl-wrap" style="margin-top:10px"><table class="ref" id="crTbl"></table></div>
+      <div class="actions"><button class="btn ghost" id="btnUseCr">Pakai otomatis di simulasi</button></div>
+    </section>
+    <section class="panel" data-view id="v-ref2">
+      <h2>Bunga efektif</h2>
+      <table class="rows"><tbody id="effRows"></tbody></table>
+    </section>
+  </div>
+</div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {"cr":{"ADDM":{"LUXURY":[[0.3,0.057,0.0645,0.0685,0.08,0.085],[0.25,0.057,0.067,0.072,0.087,0.092],[0.2,0.0645,0.0745,0.0795,0.0945,0.0995],[0.15,0.072,0.082,0.087,0.102,0.107]],"REGULAR 1":[[0.3,0.0595,0.067,0.071,0.0825,0.0875],[0.25,0.0595,0.0695,0.0745,0.0895,0.0945],[0.2,0.067,0.077,0.082,0.097,0.102],[0.15,0.0745,0.0845,0.0895,0.1045,0.1095]],"REGULAR 2":[[0.3,0.062,0.0695,0.0735,0.085,0.09],[0.25,0.062,0.072,0.077,0.092,0.097],[0.2,0.0695,0.0795,0.0845,0.0995,0.1045],[0.15,0.077,0.087,0.092,0.107,0.112]],"COMMERCIAL 1":[[0.3,0.0645,0.072,0.076,0.0875,0.0925],[0.25,0.0645,0.0745,0.0795,0.0945,0.0995],[0.2,0.072,0.082,0.087,0.102,0.107],[0.15,0.0795,0.0895,0.0945,0.1095,0.1145]],"COMMERCIAL 2":[[0.3,0.067,0.0745,0.0785,0.09,0.095],[0.25,0.067,0.077,0.082,0.097,0.102],[0.2,0.0745,0.0845,0.0895,0.1045,0.1095],[0.15,0.082,0.092,0.097,0.112,0.117]]},"ADDB":{"LUXURY":[[0.3,0.0683,0.0709,0.0732,0.0843,0.0888],[0.25,0.0683,0.0736,0.0769,0.0917,0.0962],[0.2,0.0773,0.0819,0.085,0.0992,0.1041],[0.15,null,null,null,null,null]],"REGULAR 1":[[0.3,0.0713,0.0736,0.0758,0.0869,0.0914],[0.25,0.0713,0.0764,0.0796,0.0944,0.0988],[0.2,0.0803,0.0847,0.0877,0.1024,0.1067],[0.15,null,null,null,null,null]],"REGULAR 2":[[0.3,0.0743,0.0764,0.0785,0.0896,0.0941],[0.25,0.0743,0.0792,0.0823,0.097,0.1015],[0.2,0.0833,0.0875,0.0904,0.105,0.1094],[0.15,null,null,null,null,null]],"COMMERCIAL 1":[[0.3,0.0773,0.0792,0.0812,0.0922,0.0967],[0.25,0.0773,0.0819,0.085,0.0997,0.1041],[0.2,0.0863,0.0902,0.0931,0.1077,0.112],[0.15,null,null,null,null,null]],"COMMERCIAL 2":[[0.3,0.0803,0.0819,0.0839,0.0949,0.0994],[0.25,0.0803,0.0847,0.0877,0.1024,0.1067],[0.2,0.0893,0.093,0.0957,0.1103,0.1147],[0.15,null,null,null,null,null]]}},"cab":[["DKI","KWITANG","Wilayah 2","C1"],["DKI","FATMAWATI","Wilayah 2","C1"],["DKI","TANGERANG","Wilayah 2","C1"],["DKI","KELAPA GADING","Wilayah 2","C1"],["DKI","BEKASI","Wilayah 2","C1"],["DKI","KEBON JERUK","Wilayah 2","C1"],["DKI","DEPOK","Wilayah 2","C1"],["DKI","SERANG","Wilayah 2","C2"],["DKI","KALIMALANG","Wilayah 2","C1"],["DKI","PLUIT","Wilayah 2","C1"],["DKI","BINTARO","Wilayah 2","C1"],["DKI","CIDENG","Wilayah 2","C1"],["DKI","PANCORAN","Wilayah 2","C1"],["DKI","C2C (NON REFINANCING)","Wilayah 2","C1"],["DKI","CIBUBUR","Wilayah 2","C1"],["DKI","CIKARANG","Wilayah 2","C1"],["JABAR","BANDUNG 1","Wilayah 2","C1"],["JABAR","BANDUNG 2","Wilayah 2","C1"],["JABAR","BOGOR","Wilayah 2","C1"],["JABAR","CIREBON","Wilayah 2","C1"],["JABAR","TASIKMALAYA","Wilayah 2","C2"],["JABAR","SUKABUMI","Wilayah 2","C2"],["JABAR","KARAWANG","Wilayah 2","C2"],["JATENG","SEMARANG","Wilayah 3","C1"],["JATENG","YOGYAKARTA","Wilayah 3","C2"],["JATENG","SOLO","Wilayah 3","C2"],["JATENG","PURWOKERTO","Wilayah 3","C3"],["JATENG","TEGAL","Wilayah 3","C2"],["JATENG","KUDUS","Wilayah 3","C2"],["JATENG","MAGELANG","Wilayah 3","C3"],["JATIM","SURABAYA 1","Wilayah 3","C1"],["JATIM","SURABAYA 2","Wilayah 3","C2"],["JATIM","SURABAYA 3","Wilayah 3","C2"],["JATIM","MALANG","Wilayah 3","C2"],["JATIM","KEDIRI","Wilayah 3","C1"],["JATIM","JEMBER","Wilayah 3","C3"],["JATIM","DENPASAR","Wilayah 3","C1"],["JATIM","RENON","Wilayah 3","C1"],["JATIM","MATARAM","Wilayah 3","C1"],["JATIM","GRESIK","Wilayah 3","C1"],["SUMBAGSEL","PALEMBANG","Wilayah 1","C1"],["SUMBAGSEL","JAMBI","Wilayah 1","C2"],["SUMBAGSEL","LAMPUNG","Wilayah 1","C1"],["SUMBAGSEL","MUARA BUNGO","Wilayah 1","C4"],["SUMBAGSEL","BENGKULU","Wilayah 1","C3"],["SUMBAGSEL","PANGKAL PINANG","Wilayah 1","C3"],["SUMBAGUT","MEDAN 1","Wilayah 1","C1"],["SUMBAGUT","MEDAN 2","Wilayah 1","C2"],["SUMBAGUT","PADANG","Wilayah 1","C2"],["SUMBAGUT","PEKANBARU","Wilayah 1","C2"],["SUMBAGUT","BUKIT TINGGI","Wilayah 1","C3"],["SUMBAGUT","RANTAU PRAPAT","Wilayah 1","C2"],["SUMBAGUT","BANDA ACEH","Wilayah 1","C1"],["SUMBAGUT","DURI","Wilayah 1","C2"],["SUMBAGUT","BATAM","Wilayah 1","C2"],["KALIMANTAN","BALIKPAPAN","Wilayah 3","C2"],["KALIMANTAN","BANJARMASIN","Wilayah 3","C2"],["KALIMANTAN","SAMARINDA","Wilayah 3","C2"],["KALIMANTAN","PALANGKARAYA","Wilayah 3","C4"],["KALIMANTAN","PONTIANAK","Wilayah 3","C3"],["SULAWESI","MAKASAR","Wilayah 3","C1"],["SULAWESI","MANADO","Wilayah 3","C2"],["SULAWESI","PALU","Wilayah 3","C3"],["SULAWESI","GORONTALO","Wilayah 3","C4"],["SULAWESI","KENDARI","Wilayah 3","C4"],["SULAWESI","PARE PARE","Wilayah 3","C2"]],"ins":{"Wilayah 1":{"5 thn AR":{"p":[0.1528,0.1463,0.1359,0.1268,0.1206,0.11068,0.102,0.0977,0.09082,0.0848,0.0821,0.07778,0.074],"t":0.146,"b":0.12},"4 thn AR, 1 thn TLO":{"p":[0.13341,0.12691,0.11651,0.11112,0.10492,0.095,0.09003,0.08573,0.07885,0.07549,0.07279,0.06847,0.06616],"t":0.12913,"b":0.10705},"3 thn AR, 2 thn TLO":{"p":[0.11402,0.10752,0.09712,0.09544,0.08924,0.07932,0.07806,0.07376,0.06688,0.06618,0.06348,0.05916,0.05832],"t":0.11226,"b":0.0941},"2 thn AR, 3 thn TLO":{"p":[0.09186,0.08536,0.0792,0.07752,0.07132,0.06564,0.06438,0.06008,0.05624,0.05554,0.05284,0.0502,0.04936],"t":0.09298,"b":0.0793},"1 thn AR, 4 thn TLO":{"p":[0.0697,0.0632,0.06128,0.0596,0.0534,0.05196,0.0507,0.0464,0.0456,0.0449,0.0422,0.04124,0.0404],"t":0.0737,"b":0.0645},"5 thn TLO":{"p":[0.042,0.0408,0.03888,0.0372,0.0363,0.03486,0.0336,0.0331,0.0323,0.0316,0.031,0.03004,0.0292],"t":0.0496,"b":0.046},"4 thn AR":{"p":[0.12606,0.11956,0.10916,0.10461,0.09841,0.08849,0.08415,0.07985,0.07297,0.06996,0.06726,0.06294,0.06105],"t":0.12045,"b":0.099},"3 thn AR, 1 thn TLO":{"p":[0.10667,0.10017,0.08977,0.08893,0.08273,0.07281,0.07218,0.06788,0.061,0.06065,0.05795,0.05363,0.05321],"t":0.10358,"b":0.08605},"2 thn AR, 2 thn TLO":{"p":[0.08451,0.07801,0.07185,0.07101,0.06481,0.05913,0.0585,0.0542,0.05036,0.05001,0.04731,0.04467,0.04425],"t":0.0843,"b":0.07125},"1 thn AR, 3 thn TLO":{"p":[0.06235,0.05585,0.05393,0.05309,0.04689,0.04545,0.04482,0.04052,0.03972,0.03937,0.03667,0.03571,0.03529],"t":0.06502,"b":0.05645},"4 thn TLO":{"p":[0.03465,0.03345,0.03153,0.03069,0.02979,0.02835,0.02772,0.02722,0.02642,0.02607,0.02547,0.02451,0.02409],"t":0.04092,"b":0.03795},"3 thn AR":{"p":[0.09932,0.09282,0.08242,0.08242,0.07622,0.0663,0.0663,0.062,0.05512,0.05512,0.05242,0.0481,0.0481],"t":0.0949,"b":0.078},"2 thn AR, 1 thn TLO":{"p":[0.07716,0.07066,0.0645,0.0645,0.0583,0.05262,0.05262,0.04832,0.04448,0.04448,0.04178,0.03914,0.03914],"t":0.07562,"b":0.0632},"1 thn AR, 2 thn TLO":{"p":[0.055,0.0485,0.04658,0.04658,0.04038,0.03894,0.03894,0.03464,0.03384,0.03384,0.03114,0.03018,0.03018],"t":0.05634,"b":0.0484},"3 thn TLO":{"p":[0.0273,0.0261,0.02418,0.02418,0.02328,0.02184,0.02184,0.02134,0.02054,0.02054,0.01994,0.01898,0.01898],"t":0.03224,"b":0.0299},"2 thn AR":{"p":[0.06876,0.06226,0.05706,0.05706,0.05086,0.0459,0.0459,0.0416,0.03816,0.03816,0.03546,0.0333,0.0333],"t":0.0657,"b":0.054},"1 thn AR, 1 thn TLO":{"p":[0.0466,0.0401,0.03914,0.03914,0.03294,0.03222,0.03222,0.02792,0.02752,0.02752,0.02482,0.02434,0.02434],"t":0.04642,"b":0.0392},"2 thn TLO":{"p":[0.0189,0.0177,0.01674,0.01674,0.01584,0.01512,0.01512,0.01462,0.01422,0.01422,0.01362,0.01314,0.01314],"t":0.02232,"b":0.0207},"1 thn AR":{"p":[0.0382,0.0317,0.0317,0.0317,0.0255,0.0255,0.0255,0.0212,0.0212,0.0212,0.0185,0.0185,0.0185],"t":0.0365,"b":0.03},"1 thn TLO":{"p":[0.0105,0.0093,0.0093,0.0093,0.0084,0.0084,0.0084,0.0079,0.0079,0.0079,0.0073,0.0073,0.0073],"t":0.0124,"b":0.0115}},"Wilayah 2":{"5 thn AR":{"p":[0.1376,0.1329,0.12538,0.1188,0.1146,0.10788,0.102,0.0977,0.09082,0.0848,0.0821,0.07778,0.074],"t":0.146,"b":0.12},"4 thn AR, 1 thn TLO":{"p":[0.1215,0.1168,0.10928,0.10515,0.10095,0.09423,0.09003,0.08573,0.07885,0.07549,0.07279,0.06847,0.06616],"t":0.12913,"b":0.10705},"3 thn AR, 2 thn TLO":{"p":[0.1054,0.1007,0.09318,0.0915,0.0873,0.08058,0.07806,0.07376,0.06688,0.06618,0.06348,0.05916,0.05832],"t":0.11226,"b":0.0941},"2 thn AR, 3 thn TLO":{"p":[0.087,0.0823,0.07758,0.0759,0.0717,0.0669,0.06438,0.06008,0.05624,0.05554,0.05284,0.0502,0.04936],"t":0.09298,"b":0.0793},"1 thn AR, 4 thn TLO":{"p":[0.0686,0.0639,0.06198,0.0603,0.0561,0.05322,0.0507,0.0464,0.0456,0.0449,0.0422,0.04124,0.0404],"t":0.0737,"b":0.0645},"5 thn TLO":{"p":[0.0456,0.0444,0.04248,0.0408,0.039,0.03612,0.0336,0.0331,0.0323,0.0316,0.031,0.03004,0.0292],"t":0.0496,"b":0.046},"4 thn AR":{"p":[0.11352,0.10882,0.1013,0.09801,0.09381,0.08709,0.08415,0.07985,0.07297,0.06996,0.06726,0.06294,0.06105],"t":0.12045,"b":0.099},"3 thn AR, 1 thn TLO":{"p":[0.09742,0.09272,0.0852,0.08436,0.08016,0.07344,0.07218,0.06788,0.061,0.06065,0.05795,0.05363,0.05321],"t":0.10358,"b":0.08605},"2 thn AR, 2 thn TLO":{"p":[0.07902,0.07432,0.0696,0.06876,0.06456,0.05976,0.0585,0.0542,0.05036,0.05001,0.04731,0.04467,0.04425],"t":0.0843,"b":0.07125},"1 thn AR, 3 thn TLO":{"p":[0.06062,0.05592,0.054,0.05316,0.04896,0.04608,0.04482,0.04052,0.03972,0.03937,0.03667,0.03571,0.03529],"t":0.06502,"b":0.05645},"4 thn TLO":{"p":[0.03762,0.03642,0.0345,0.03366,0.03186,0.02898,0.02772,0.02722,0.02642,0.02607,0.02547,0.02451,0.02409],"t":0.04092,"b":0.03795},"3 thn AR":{"p":[0.08944,0.08474,0.07722,0.07722,0.07302,0.0663,0.0663,0.062,0.05512,0.05512,0.05242,0.0481,0.0481],"t":0.0949,"b":0.078},"2 thn AR, 1 thn TLO":{"p":[0.07104,0.06634,0.06162,0.06162,0.05742,0.05262,0.05262,0.04832,0.04448,0.04448,0.04178,0.03914,0.03914],"t":0.07562,"b":0.0632},"1 thn AR, 2 thn TLO":{"p":[0.05264,0.04794,0.04602,0.04602,0.04182,0.03894,0.03894,0.03464,0.03384,0.03384,0.03114,0.03018,0.03018],"t":0.05634,"b":0.0484},"3 thn TLO":{"p":[0.02964,0.02844,0.02652,0.02652,0.02472,0.02184,0.02184,0.02134,0.02054,0.02054,0.01994,0.01898,0.01898],"t":0.03224,"b":0.0299},"2 thn AR":{"p":[0.06192,0.05722,0.05346,0.05346,0.04926,0.0459,0.0459,0.0416,0.03816,0.03816,0.03546,0.0333,0.0333],"t":0.0657,"b":0.054},"1 thn AR, 1 thn TLO":{"p":[0.04352,0.03882,0.03786,0.03786,0.03366,0.03222,0.03222,0.02792,0.02752,0.02752,0.02482,0.02434,0.02434],"t":0.04642,"b":0.0392},"2 thn TLO":{"p":[0.02052,0.01932,0.01836,0.01836,0.01656,0.01512,0.01512,0.01462,0.01422,0.01422,0.01362,0.01314,0.01314],"t":0.02232,"b":0.0207},"1 thn AR":{"p":[0.0344,0.0297,0.0297,0.0297,0.0255,0.0255,0.0255,0.0212,0.0212,0.0212,0.0185,0.0185,0.0185],"t":0.0365,"b":0.03},"1 thn TLO":{"p":[0.0114,0.0102,0.0102,0.0102,0.0084,0.0084,0.0084,0.0079,0.0079,0.0079,0.0073,0.0073,0.0073],"t":0.0124,"b":0.0115}},"Wilayah 3":{"5 thn AR":{"p":[0.126,0.1223,0.11638,0.1112,0.1068,0.09976,0.0936,0.0914,0.08788,0.0848,0.0821,0.07778,0.074],"t":0.146,"b":0.12},"4 thn AR, 1 thn TLO":{"p":[0.11039,0.10669,0.10077,0.09776,0.09336,0.08632,0.0831,0.0809,0.07738,0.07549,0.07279,0.06847,0.06616],"t":0.12913,"b":0.10705},"3 thn AR, 2 thn TLO":{"p":[0.09478,0.09108,0.08516,0.08432,0.07992,0.07288,0.0726,0.0704,0.06688,0.06618,0.06348,0.05916,0.05832],"t":0.11226,"b":0.0941},"2 thn AR, 3 thn TLO":{"p":[0.07694,0.07324,0.0698,0.06896,0.06456,0.06088,0.0606,0.0584,0.05624,0.05554,0.05284,0.0502,0.04936],"t":0.09298,"b":0.0793},"1 thn AR, 4 thn TLO":{"p":[0.0591,0.0554,0.05444,0.0536,0.0492,0.04888,0.0486,0.0464,0.0456,0.0449,0.0422,0.04124,0.0404],"t":0.0737,"b":0.0645},"5 thn TLO":{"p":[0.0368,0.0362,0.03524,0.0344,0.0342,0.03388,0.0336,0.0331,0.0323,0.0316,0.031,0.03004,0.0292],"t":0.0496,"b":0.046},"4 thn AR":{"p":[0.10395,0.10025,0.09433,0.09174,0.08734,0.0803,0.07722,0.07502,0.0715,0.06996,0.06726,0.06294,0.06105],"t":0.12045,"b":0.099},"3 thn AR, 1 thn TLO":{"p":[0.08834,0.08464,0.07872,0.0783,0.0739,0.06686,0.06672,0.06452,0.061,0.06065,0.05795,0.05363,0.05321],"t":0.10358,"b":0.08605},"2 thn AR, 2 thn TLO":{"p":[0.0705,0.0668,0.06336,0.06294,0.05854,0.05486,0.05472,0.05252,0.05036,0.05001,0.04731,0.04467,0.04425],"t":0.0843,"b":0.07125},"1 thn AR, 3 thn TLO":{"p":[0.05266,0.04896,0.048,0.04758,0.04318,0.04286,0.04272,0.04052,0.03972,0.03937,0.03667,0.03571,0.03529],"t":0.06502,"b":0.05645},"4 thn TLO":{"p":[0.03036,0.02976,0.0288,0.02838,0.02818,0.02786,0.02772,0.02722,0.02642,0.02607,0.02547,0.02451,0.02409],"t":0.04092,"b":0.03795},"3 thn AR":{"p":[0.0819,0.0782,0.07228,0.07228,0.06788,0.06084,0.06084,0.05864,0.05512,0.05512,0.05242,0.0481,0.0481],"t":0.0949,"b":0.078},"2 thn AR, 1 thn TLO":{"p":[0.06406,0.06036,0.05692,0.05692,0.05252,0.04884,0.04884,0.04664,0.04448,0.04448,0.04178,0.03914,0.03914],"t":0.07562,"b":0.0632},"1 thn AR, 2 thn TLO":{"p":[0.04622,0.04252,0.04156,0.04156,0.03716,0.03684,0.03684,0.03464,0.03384,0.03384,0.03114,0.03018,0.03018],"t":0.05634,"b":0.0484},"3 thn TLO":{"p":[0.02392,0.02332,0.02236,0.02236,0.02216,0.02184,0.02184,0.02134,0.02054,0.02054,0.01994,0.01898,0.01898],"t":0.03224,"b":0.0299},"2 thn AR":{"p":[0.0567,0.053,0.05004,0.05004,0.04564,0.04212,0.04212,0.03992,0.03816,0.03816,0.03546,0.0333,0.0333],"t":0.0657,"b":0.054},"1 thn AR, 1 thn TLO":{"p":[0.03886,0.03516,0.03468,0.03468,0.03028,0.03012,0.03012,0.02792,0.02752,0.02752,0.02482,0.02434,0.02434],"t":0.04642,"b":0.0392},"2 thn TLO":{"p":[0.01656,0.01596,0.01548,0.01548,0.01528,0.01512,0.01512,0.01462,0.01422,0.01422,0.01362,0.01314,0.01314],"t":0.02232,"b":0.0207},"1 thn AR":{"p":[0.0315,0.0278,0.0278,0.0278,0.0234,0.0234,0.0234,0.0212,0.0212,0.0212,0.0185,0.0185,0.0185],"t":0.0365,"b":0.03},"1 thn TLO":{"p":[0.0092,0.0086,0.0086,0.0086,0.0084,0.0084,0.0084,0.0079,0.0079,0.0079,0.0073,0.0073,0.0073],"t":0.0124,"b":0.0115}},"brackets":[125000000,156250000,178571428.57,200000000,250000000,285714285.71,400000000,500000000,571428571.42,800000000,1000000000,1142857143,1142857144]}};
+const $ = id => document.getElementById(id);
+const fmt = n => (isFinite(n) ? Math.round(n) : 0).toLocaleString('id-ID');
+const rp = n => 'Rp ' + fmt(n);
+const pct = (n, d=2) => (n*100).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d}) + '%';
+const parseRp = s => Number(String(s).replace(/[^\d-]/g,'')) || 0;
+const num = id => { const v = parseFloat(String($(id).value).replace(',','.')); return isFinite(v) ? v : 0; };
+const ceilTo = (x, step) => Math.ceil(x/step - 1e-9) * step;
+const floorTo = (x, step) => Math.floor(x/step + 1e-9) * step;
+
+/* ---------- pilihan dropdown ---------- */
+const COVERS = {
+  5:['5 thn AR','4 thn AR, 1 thn TLO','3 thn AR, 2 thn TLO','2 thn AR, 3 thn TLO','1 thn AR, 4 thn TLO','5 thn TLO'],
+  4:['4 thn AR','3 thn AR, 1 thn TLO','2 thn AR, 2 thn TLO','1 thn AR, 3 thn TLO','4 thn TLO'],
+  3:['3 thn AR','2 thn AR, 1 thn TLO','1 thn AR, 2 thn TLO','3 thn TLO'],
+  2:['2 thn AR','1 thn AR, 1 thn TLO','2 thn TLO'],
+  1:['1 thn AR','1 thn TLO']
+};
+function fillCabang(){
+  const sel = $('cabang'); let area = null, og = null;
+  DATA.cab.forEach(([a,c,w,l]) => {
+    if (a !== area){ og = document.createElement('optgroup'); og.label = a; sel.appendChild(og); area = a; }
+    const o = document.createElement('option'); o.value = c; o.textContent = `${c} · ${w} · ${l}`; og.appendChild(o);
+  });
+  sel.value = 'MANADO';
+}
+function fillCover(keep){
+  const t = +$('tenor').value, sel = $('cover'), prev = keep ?? sel.value;
+  sel.innerHTML = COVERS[t].map(c=>`<option>${c}</option>`).join('');
+  const truck = $('jenis').value !== 'PASSENGER';
+  if (COVERS[t].includes(prev)) sel.value = prev;
+  else sel.value = truck ? `${t} thn TLO` : (COVERS[t].find(c=>c.startsWith('1 thn AR')) || COVERS[t][0]);
+}
+
+/* ---------- mesin hitung (mengikuti sheet "Komputer") ---------- */
+function cabInfo(){ const c = DATA.cab.find(x=>x[1]===$('cabang').value) || DATA.cab[0]; return {cab:c[1], wil:c[2], lvl:c[3]}; }
+function insRate(wil, cover, jenis, otrNet){
+  const row = DATA.ins[wil][cover]; if (!row) return 0;
+  if (jenis === 'TRUCK / PU / BOX') return row.t;
+  if (jenis === 'BUS / MICROBUS') return row.b;
+  const br = DATA.ins.brackets; let i = br.findIndex(b => otrNet < b + 1); if (i < 0) i = br.length-1;
+  return row.p[i];
+}
+function bracketOf(otrNet){ const br = DATA.ins.brackets; let i = br.findIndex(b => otrNet < b + 1); if (i<0) i = br.length-1; return br[i]; }
+
+function inputs(){
+  const otr = parseRp($('otr').value), disc = parseRp($('disc').value);
+  return {
+    otr, disc, otrNet: otr - disc,
+    dpMode: document.querySelector('#dpMode [aria-pressed="true"]').dataset.v,
+    dpPct: num('dpPct')/100, dpRp: parseRp($('dpRp').value),
+    tenor: +$('tenor').value,
+    addm: document.querySelector('#addm [aria-pressed="true"]').dataset.v,
+    bCounter: num('bCounter')/100, bPdc: num('bPdc')/100,
+    bAuto: document.querySelector('#bMode [aria-pressed="true"]').dataset.v === 'auto', kat: $('kat').value,
+    jenis: $('jenis').value, cover: $('cover').value, insPay: $('insPay').value,
+    acp: $('acp').value, acpPay: $('acpPay').value,
+    admin: parseRp($('admin').value), polis: parseRp($('polis').value),
+    provisi: num('provisi')/100, ...cabInfo()
+  };
+}
+
+function calc(p, dpOverride){
+  const r = {};
+  r.otrNet = p.otrNet;
+  r.dp = dpOverride != null ? dpOverride : (p.dpMode === 'pct' ? p.dpPct * p.otrNet : p.dpRp);
+  r.dpPct = p.otrNet ? r.dp / p.otrNet : 0;
+  r.ph = p.otrNet - r.dp;
+  r.cr = counterRate(p, r.dpPct, p.kat);
+  r.crLow = null;
+  if (!r.cr){ // DP di bawah band terendah: pakai rate band terendah yang tersedia (paling mahal)
+    const ti = [12,24,36,48,60].indexOf(p.tenor*12) + 1, add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl] || 0;
+    const rw = DATA.cr[p.addm][p.kat].filter(x => x[ti] != null).pop();
+    if (rw) r.crLow = {rate: rw[ti] + add, band: rw[0]};
+  }
+  r.bAutoOk = p.bAuto && !!(r.cr || r.crLow);
+  r.bCounter = r.bAutoOk ? (r.cr || r.crLow).rate : p.bCounter;
+  r.bunga = r.bCounter + p.bPdc;
+  r.n = p.tenor * 12;
+  // Asuransi
+  r.insRate = insRate(p.wil, p.cover, p.jenis, p.otrNet);
+  r.insFull = r.insRate * p.otrNet;
+  r.yr1Cover = /^\d thn TLO$/.test(p.cover) ? '1 thn TLO' : '1 thn AR';
+  r.insYr1 = insRate(p.wil, r.yr1Cover, p.jenis, p.otrNet) * p.otrNet;
+  if (p.insPay === 'KREDIT FULL'){ r.insKredit = r.insFull; r.insTunai = 0; }
+  else if (p.insPay === 'TUNAI TAHUN 1'){ r.insKredit = r.insFull - r.insYr1; r.insTunai = r.insYr1; }
+  else { r.insKredit = 0; r.insTunai = r.insFull; }
+  // ACP
+  const base = r.ph + r.insKredit;
+  const acpRaw = (p.tenor > 1 ? 0.0175 : 0.0075) * (base * r.bunga * p.tenor + base);
+  r.acpAmt = p.acp === 'YA' ? ceilTo(acpRaw, 1000) : 0;
+  r.acpKredit = p.acpPay === 'KREDIT' ? r.acpAmt : 0;
+  r.acpTunai  = p.acpPay === 'TUNAI'  ? r.acpAmt : 0;
+  r.pokok = r.ph + r.insKredit + r.acpKredit;
+  r.bungaRaw = r.bunga * p.tenor * r.pokok;
+  r.bungaRp = ceilTo(r.bungaRaw, 1000);
+  r.hutang = r.pokok + r.bungaRp;
+  r.angs = ceilTo(r.hutang / r.n, 1000);
+  r.angs10 = ceilTo(r.angs, 10000);
+  r.nBayar = p.addm === 'ADDM' ? r.n - 1 : r.n;
+  r.angs1 = p.addm === 'ADDM' ? r.angs : 0;
+  r.provisiRp = p.provisi * r.ph;
+  r.tdp = r.dp + r.angs1 + r.insTunai + r.acpTunai + p.admin + p.polis + r.provisiRp;
+  return r;
+}
+
+/* Benefit dealer & OJK (mengikuti sheet "Itungan Manual") */
+function benefit(p, r){
+  const b = {};
+  const refund = num('refund')/100, assAcc = num('assAcc')/100, admStd = parseRp($('admStd').value);
+  b.pdc = p.bPdc > 0 ? (r.ph * p.tenor * p.bPdc) / (1 + (r.bunga - p.bPdc) * p.tenor) : 0;
+  b.refund = r.insRate * p.otrNet * refund;
+  b.prov = p.provisi * r.pokok;
+  b.total = b.pdc + b.refund + b.prov;
+  b.accBunga = r.pokok * r.bunga * p.tenor;
+  b.accAss = r.insRate * p.otrNet * assAcc;
+  b.accProv = r.provisiRp;
+  b.accAdm = p.admin;
+  b.accTotal = b.accBunga + b.accAss + b.accProv + b.accAdm;
+  b.ratio = b.accTotal ? b.total / b.accTotal : 0;
+  b.admSelisih = p.admin - admStd;
+  b.sPdc = b.pdc * num('spPdc')/100;
+  b.sAdm = Math.max(0, b.admSelisih) * num('spAdm')/100;
+  b.sRef = b.refund * num('spRef')/100;
+  b.sProv = b.prov * num('spProv')/100;
+  b.sTotal = b.sPdc + b.sAdm + b.sRef + b.sProv;
+  return b;
+}
+
+/* Counter rate */
+function counterRate(p, dpPct, kat){
+  const tbl = DATA.cr[p.addm][kat]; const ti = [12,24,36,48,60].indexOf(p.tenor*12) + 1;
+  const row = tbl.find(rw => dpPct + 1e-6 > rw[0]);
+  if (!row || row[ti] == null) return null;
+  const add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl] || 0;
+  return {base: row[ti], add, rate: row[ti] + add, band: row[0]};
+}
+
+/* Bunga efektif dari flat (RATE Excel) */
+function effRate(flat, years, adv){
+  const n = years*12, pmt = (1 + flat*years)/n;
+  const f = r => { if (Math.abs(r) < 1e-12) return 1 - pmt*n; const a = (1 - Math.pow(1+r,-n))/r; return 1 - pmt*a*(adv?1+r:1); };
+  let lo = 0, hi = 1;
+  for (let i=0;i<200;i++){ const m=(lo+hi)/2; if (f(m) > 0) hi = m; else lo = m; }
+  return 12 * (lo+hi)/2;
+}
+
+/* Cari DP */
+function solveByAngs(p, target){
+  let lo = 0, hi = Math.floor(p.otrNet/1000);
+  if (calc(p, hi*1000).angs > target) return null;
+  while (lo < hi){ const m = (lo+hi) >> 1; if (calc(p, m*1000).angs <= target) hi = m; else lo = m+1; }
+  return lo*1000;
+}
+function solveByTdp(p, target){
+  let lo = 0, hi = Math.floor(p.otrNet/1000);
+  if (calc(p, 0).tdp > target) return null;
+  while (lo < hi){ const m = (lo+hi+1) >> 1; if (calc(p, m*1000).tdp <= target) lo = m; else hi = m-1; }
+  return lo*1000;
+}
+
+/* ---------- render ---------- */
+let last = {};
+function row(label, val, op='', note=''){ return `<tr><td>${label}${note?`<small>${note}</small>`:''}</td><td class="op">${op}</td><td class="v">${val}</td></tr>`; }
+
+function render(){
+  const p = inputs(), r = calc(p), b = benefit(p, r);
+  last = {p, r, b};
+  const vehicle = [$('merk').value, $('type').value].filter(Boolean).join(' ');
+  $('topSub').textContent = `ACC ${p.cab} · ${p.wil} · ${p.lvl}`;
+  $('kpiAngs').textContent = rp(r.angs);
+  if (r.bAutoOk) $('bCounter').value = +(r.bCounter*100).toFixed(4);
+  $('bCounter').readOnly = p.bAuto;
+  $('bungaInfo').innerHTML = (p.bAuto ? (r.cr ? `Counter rate ${p.kat} · DP ≥ ${pct(r.cr.band,0)} · ${p.tenor*12} bln · ${p.addm} · ${p.cab} ${p.lvl} = <b>${pct(r.bCounter)}</b><br>` : (r.crLow ? `<b>DP ${pct(r.dpPct)} di bawah tabel</b>, dipakai rate band DP ${pct(r.crLow.band,0)} = <b>${pct(r.bCounter)}</b><br>` : `<b>Tidak ada counter rate</b>, memakai ${pct(r.bCounter)}.<br>`)) : '')
+    + `Bunga flat jual = ${pct(r.bCounter)} + ${pct(p.bPdc)} PDC = <b>${pct(r.bunga)}</b> per tahun × ${p.tenor} tahun = ${pct(r.bunga*p.tenor)}`;
+  $('bPdc').style.borderColor = p.bPdc > 0.02 + 1e-9 ? 'var(--bad)' : '';
+  $('insInfo').textContent = `Tarif ${p.cover}: ${pct(r.insRate,3)} dari OTR nett` + (p.jenis==='PASSENGER' ? ` (kolom harga ≤ ${rp(bracketOf(p.otrNet))})` : '') + ` · ${p.wil}`;
+
+  // peringatan
+  const al = [];
+  if (r.dpPct < 0.15) al.push(['bad','DP di bawah 15%. Tabel counter rate tidak menyediakan rate untuk DP ini.']);
+  else if (p.jenis==='PASSENGER' && r.dpPct < 0.2) al.push(['','DP di bawah 20% untuk passenger. Cek ketentuan uang muka minimum.']);
+  if (r.dp < 0) al.push(['bad','DP lebih besar dari harga OTR nett.']);
+  if (p.bPdc > 0.02 + 1e-9) al.push(['bad',`Benefit PDC ${pct(p.bPdc)} melebihi batas maksimal 2%. Turunkan ke 2% atau kurang.`]);
+  if (b.ratio > 0.15) al.push(['bad',`Benefit dealer ${pct(b.ratio)} melebihi batas OJK 15%. Kurangi PDC/refund/provisi.`]);
+  $('alerts').innerHTML = al.map(([c,t])=>`<div class="alert ${c}">${t}</div>`).join('');
+
+  // lembar simulasi
+  $('shCab').innerHTML = `Astra Credit Companies<br>${p.cab}`;
+  $('shSub').textContent = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  $('shMeta').innerHTML = [['Nama Konsumen',$('nama').value||'—'],['Merk',$('merk').value||'—'],['Type',$('type').value||'—'],['Tahun',$('tahun').value||'—']]
+    .map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  $('bigAngs').textContent = rp(r.angs);
+  $('bigAngsNote').textContent = `${r.nBayar}x · ${p.addm}` + (r.angs10 !== r.angs ? ` · dibulatkan ${rp(r.angs10)}` : '');
+  $('bigTdp').textContent = rp(r.tdp);
+  $('bigTdpNote').textContent = `DP ${pct(r.dpPct)}`;
+  $('shRows').innerHTML =
+    row('Harga OTR', fmt(p.otr)) +
+    row('Discount dealer', fmt(p.disc), '−') +
+    row('Harga OTR nett', fmt(p.otrNet)) +
+    row('DP', fmt(r.dp), '−', pct(r.dpPct)) +
+    row('Pokok hutang', fmt(r.ph)) +
+    row('Premi asuransi', fmt(r.insKredit), '+', `${p.cover} · ${p.insPay}`) +
+    row('Premi ACP / Ass jiwa', fmt(r.acpKredit), '+', `${p.acp} · ${p.acpPay}`) +
+    row('Jumlah pokok hutang', fmt(r.pokok)) +
+    row('Bunga flat', fmt(r.bungaRp), '+', `${pct(r.bunga)} × ${p.tenor} tahun`) +
+    row('Jumlah hutang', fmt(r.hutang), '', `${r.n} bulan`) +
+    `<tr class="sum"><td>Angsuran / bulan<small>${p.addm} · ${r.nBayar}x</small></td><td class="op"></td><td class="v">${fmt(r.angs)}</td></tr>` +
+    `<tr class="sec"><td colspan="3">Total bayar pertama</td></tr>` +
+    row('Uang muka (DP)', fmt(r.dp)) +
+    row('Angsuran I', fmt(r.angs1), '', p.addm==='ADDM'?'ADDM':'ADDB, tidak ada') +
+    row('Asuransi tahun 1 / tunai', fmt(r.insTunai)) +
+    row('Premi ACP tunai', fmt(r.acpTunai)) +
+    row('Biaya admin', fmt(p.admin)) +
+    row('Biaya polis asuransi', fmt(p.polis), '+') +
+    (r.provisiRp ? row('Provisi', fmt(r.provisiRp), '+') : '') +
+    `<tr class="sum"><td>TOTAL bayar pertama</td><td class="op"></td><td class="v">${fmt(r.tdp)}</td></tr>`;
+  const so = $('so').value, hp = $('hp').value, em = $('email').value;
+  $('shContact').innerHTML = `Informasi selengkapnya hubungi: <b>${esc(so||'—')}</b>${hp?` · ${esc(hp)}`:''}${em?` · ${esc(em)}`:''}`;
+
+  // cari DP
+  const tA = parseRp($('tAngs').value), dA = solveByAngs(p, tA);
+  $('rAngs').innerHTML = dA == null ? `<span class="pill bad">Tidak tercapai</span><p class="hint">Bahkan tanpa pinjaman, angsuran tidak bisa ≤ ${rp(tA)}.</p>` : dpResult(p, dA, 'a');
+  const tT = parseRp($('tTdp').value), dT = solveByTdp(p, tT);
+  $('rTdp').innerHTML = dT == null ? `<span class="pill bad">Tidak cukup</span><p class="hint">Biaya admin, polis dan biaya tunai saja sudah ${rp(calc(p,0).tdp)}.</p>` : dpResult(p, dT, 't');
+
+  // benefit
+  $('ojkPct').textContent = pct(b.ratio);
+  const ok = b.ratio <= 0.15;
+  $('ojkPill').className = 'pill ' + (ok ? 'good' : 'bad');
+  $('ojkPill').textContent = ok ? 'Aman, di bawah 15%' : 'Melebihi 15%';
+  $('ojkBar').style.width = Math.min(100, b.ratio/0.30*100) + '%';
+  $('ojkBar').className = ok ? '' : 'bad';
+  $('benRows').innerHTML =
+    `<tr class="sec"><td colspan="3">Pendapatan ACC</td></tr>` +
+    row('Bunga', fmt(b.accBunga), '', `${pct(r.bunga)} × ${p.tenor} th × pokok`) +
+    row('Asuransi', fmt(b.accAss), '', `${pct(r.insRate,3)} × OTR × ${num('assAcc')}%`) +
+    row('Provisi', fmt(b.accProv)) +
+    row('Admin', fmt(b.accAdm), '+') +
+    `<tr class="sum"><td>Total pendapatan ACC</td><td class="op"></td><td class="v">${fmt(b.accTotal)}</td></tr>` +
+    `<tr class="sec"><td colspan="3">Benefit dealer</td></tr>` +
+    row('PDC balik', fmt(b.pdc), '', `PH × ${p.tenor} × ${pct(p.bPdc)} ÷ (1 + ${pct(r.bunga-p.bPdc)} × ${p.tenor})`) +
+    row('Refund asuransi', fmt(b.refund), '', `${num('refund')}%`) +
+    row('Provisi', fmt(b.prov), '+', `${num('provisi')}% × pokok`) +
+    `<tr class="sum"><td>Total benefit dealer</td><td class="op"></td><td class="v">${fmt(b.total)}</td></tr>` +
+    `<tr class="sec"><td colspan="3">Kisaran rupiah salesman</td></tr>` +
+    row('Dari PDC balik', fmt(b.sPdc), '', `split ${num('spPdc')}%`) +
+    row('Dari selisih admin', fmt(b.sAdm), '', `admin − standar = ${b.admSelisih<0?'−':''}${fmt(Math.abs(b.admSelisih))}`) +
+    row('Dari refund asuransi', fmt(b.sRef)) +
+    row('Dari provisi', fmt(b.sProv), '+') +
+    `<tr class="sum"><td>Total salesman</td><td class="op"></td><td class="v">${fmt(b.sTotal)}</td></tr>`;
+
+  // counter rate
+  renderRef(p, r);
+  save();
+}
+function dpResult(p, dp, k){
+  const x = calc(p, dp);
+  return `<div class="hint" style="margin:0">DP yang dibutuhkan</div><b>${rp(dp)}</b> <span class="pill ${x.dpPct<0.15?'bad':x.dpPct<0.2?'warn':'good'}">${pct(x.dpPct)}</span>
+  <table class="rows" style="margin-top:8px"><tbody>${row('Angsuran / bulan', fmt(x.angs))}${row('Total bayar pertama', fmt(x.tdp))}${row('Pokok hutang', fmt(x.ph))}</tbody></table>
+  <div class="actions"><button class="btn" data-usedp="${dp}">Pakai DP ini di simulasi</button></div>`;
+}
+function renderRef(p, r){
+  const kat = p.kat, cr = r.cr;
+  $('crBox').innerHTML = cr ? `<div class="hint" style="margin:0">${kat} · ${p.addm} · DP ${pct(r.dpPct,0)} · ${p.tenor*12} bln · ${p.cab} (${p.lvl})</div><b>${pct(cr.rate)}</b> <span class="hint">= ${pct(cr.base)} + ${pct(cr.add)} kompetisi</span>`
+                           : `<span class="pill bad">Tidak ada rate</span><p class="hint">Tidak ada counter rate untuk DP ${pct(r.dpPct)} di kategori ini.</p>`;
+  $('btnUseCr').disabled = !cr; $('btnUseCr').dataset.rate = cr ? cr.rate : '';
+  const tbl = DATA.cr[p.addm][kat], ti = [12,24,36,48,60].indexOf(p.tenor*12)+1, add = {C1:0,C2:.0025,C3:.005,C4:.01}[p.lvl]||0;
+  $('crTbl').innerHTML = `<tr><th>DP ≥ (${p.addm})</th><th>12</th><th>24</th><th>36</th><th>48</th><th>60</th></tr>` +
+    tbl.map(rw => `<tr><td>${pct(rw[0],0)}</td>${[1,2,3,4,5].map(i=>`<td class="${cr && rw[0]===cr.band && i===ti?'hit':''}">${rw[i]==null?'—':pct(rw[i]+add)}</td>`).join('')}</tr>`).join('');
+  const eJ = effRate(r.bunga, p.tenor, p.addm==='ADDM'), eS = effRate(r.bCounter, p.tenor, p.addm==='ADDM');
+  $('effRows').innerHTML = row('Rate jual (flat)', pct(r.bunga)) + row('Rate jual (efektif)', pct(eJ)) + row('Rate standar / counter (flat)', pct(r.bCounter)) + row('Rate standar (efektif)', pct(eS));
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- WA text ---------- */
+function waText(){
+  const {p, r} = last;
+  const L = [];
+  L.push('*SIMULASI KREDIT*');
+  if ($('nama').value) L.push('Konsumen: ' + $('nama').value);
+  L.push(`Unit: ${[$('merk').value,$('type').value,$('tahun').value].filter(Boolean).join(' ')}`);
+  L.push('');
+  L.push(`Harga OTR: ${rp(p.otrNet)}`);
+  L.push(`DP: ${rp(r.dp)} (${pct(r.dpPct,1)})`);
+  L.push(`Tenor: ${p.tenor} tahun (${r.nBayar}x, ${p.addm})`);
+  L.push(`Asuransi: ${p.cover}`);
+  L.push('');
+  L.push(`*Angsuran: ${rp(r.angs)} / bulan*`);
+  L.push(`*Total bayar pertama: ${rp(r.tdp)}*`);
+  const rinci = [r.angs1 ? `angsuran I ${rp(r.angs1)}` : '', r.insTunai ? `asuransi ${rp(r.insTunai)}` : '', r.acpTunai ? `ACP ${rp(r.acpTunai)}` : ''].filter(Boolean);
+  if (rinci.length) L.push(`  DP ${rp(r.dp)} + ${rinci.join(' + ')}`);
+  L.push('');
+  L.push('_Simulasi, dapat berubah sesuai ketentuan leasing._');
+  return L.join('\n');
+}
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),1800); }
+$('btnWa').addEventListener('click', () => {
+  const t = waText();
+  navigator.clipboard?.writeText(t).then(()=>toast('Teks disalin. Tempel di WhatsApp.'), ()=>fallbackCopy(t)) ?? fallbackCopy(t);
+});
+function fallbackCopy(t){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); toast('Teks disalin.');}catch(e){toast('Salin manual dari kotak teks.');} ta.remove(); }
+// tombol cetak hanya muncul jika file dibuka langsung (bukan di dalam artifact)
+const STANDALONE = (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+// Cetak: hanya bila dibuka langsung di peramban (di ikon layar utama iPhone, window.print tidak berfungsi)
+try { if (window.self === window.top && !(STANDALONE && /iPhone|iPad|iPod/.test(navigator.userAgent))) { $('btnPrint').hidden = false; $('btnPrint').onclick = () => window.print(); } } catch(e){}
+// Bagikan teks lewat lembar berbagi HP (iPhone/Android)
+try { if (window.self === window.top && navigator.share) { $('btnShare').hidden = false; $('btnShare').onclick = () => navigator.share({title:'Simulasi Kredit', text: waText()}).catch(()=>{}); } } catch(e){}
+// Service worker untuk mode offline saat dipasang sebagai aplikasi
+try { if ('serviceWorker' in navigator && location.protocol === 'https:' && window.self === window.top) navigator.serviceWorker.register('sw.js'); } catch(e){}
+
+/* ---------- events ---------- */
+document.querySelectorAll('.money').forEach(el => {
+  el.addEventListener('input', () => { const pos = el.value.length - el.selectionStart; const n = parseRp(el.value); el.value = n ? n.toLocaleString('id-ID') : (el.value.trim()===''?'':'0'); try{ const np = Math.max(0, el.value.length - pos); el.setSelectionRange(np,np);}catch(e){} });
+});
+document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
+$('tenor').addEventListener('change', () => { fillCover(); render(); });
+function katDariType(t){
+  const T = String(t).toUpperCase().replace(/\s+/g,' ');
+  if (/GRAN ?MAX|GRANDMAX|\bGM ?(PU|BV|MB)\b/.test(T)){
+    if (/\bMB\b|MINIBUS/.test(T)) return {kat:'COMMERCIAL 1', jenis:'PASSENGER'};
+    return {kat:'COMMERCIAL 1', jenis:'TRUCK / PU / BOX'};
+  }
+  if (/\b(PU|PICK ?UP|BV|BLIND ?VAN|BOX)\b/.test(T)) return {kat:'COMMERCIAL 1', jenis:'TRUCK / PU / BOX'};
+  if (/AYLA|SIGRA/.test(T)) return {kat:'REGULAR 2', jenis:'PASSENGER'};
+  if (T.trim()) return {kat:'REGULAR 1', jenis:'PASSENGER'};
+  return null;
+}
+$('type').addEventListener('input', () => {
+  const k = katDariType($('type').value); if (!k) return;
+  const ganti = $('kat').value !== k.kat || $('jenis').value !== k.jenis;
+  $('kat').value = k.kat;
+  if ($('jenis').value !== k.jenis){ $('jenis').value = k.jenis; fillCover(k.jenis === 'PASSENGER' ? '-' : `${$('tenor').value} thn TLO`); }
+  $('katInfo').textContent = `Otomatis: ${k.kat} · ${k.jenis}. Bisa diganti manual.`;
+  if (ganti) render();
+});
+$('jenis').addEventListener('change', () => { fillCover($('jenis').value === 'PASSENGER' ? '-' : `${$('tenor').value} thn TLO`); render(); });
+function seg(id, cb){ $(id).addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); cb && cb(b.dataset.v); render(); }); }
+seg('addm');
+seg('bMode', v => { $('bCounter').readOnly = v === 'auto'; });
+seg('dpMode', v => {
+  const r = last.r;
+  if (v === 'rp'){ $('dpRp').value = fmt(r.dp); } else { $('dpPct').value = +(r.dpPct*100).toFixed(4); }
+  $('wrapDpPct').hidden = v !== 'pct'; $('wrapDpRp').hidden = v !== 'rp';
+});
+document.addEventListener('click', e => {
+  const u = e.target.closest('[data-usedp]'); if (!u) return;
+  const dp = +u.dataset.usedp;
+  document.querySelectorAll('#dpMode button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v==='rp'));
+  $('wrapDpPct').hidden = true; $('wrapDpRp').hidden = false; $('dpRp').value = fmt(dp);
+  render(); showTab('sim'); toast('DP dipakai di simulasi');
+});
+$('btnUseCr').addEventListener('click', () => { document.querySelectorAll('#bMode button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v==='auto')); render(); toast('Bunga counter otomatis ikut tabel'); });
+
+const VIEWS = {sim:['v-sim'], dp:['v-dp','v-dp2'], ben:['v-ben','v-ben2','v-ben3'], ref:['v-ref','v-ref2']};
+function showTab(t){
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab===t));
+  document.querySelectorAll('[data-view]').forEach(v => v.classList.toggle('on', VIEWS[t].includes(v.id)));
+  try{ localStorage.setItem('accTab', t); }catch(e){}
+}
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
+
+/* ---------- simpan isian di perangkat ---------- */
+const KEEP = ['jenis','otr','disc','dpPct','dpRp','tenor','bCounter','bPdc','cabang','cover','insPay','acp','acpPay','admin','polis','nama','merk','type','tahun','so','hp','email','refund','provisi','assAcc','admStd','spPdc','spAdm','spRef','spProv','kat','tAngs','tTdp'];
+function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=$(k).value); o.addm=last.p.addm; o.cabV=2; o.bMode=last.p.bAuto?'auto':'manual'; o.dpMode=last.p.dpMode; localStorage.setItem('accHitung', JSON.stringify(o)); }catch(e){} }
+function load(){
+  let o=null; try{ o = JSON.parse(localStorage.getItem('accHitung')||'null'); }catch(e){}
+  if (!o) return;
+  ['jenis','tenor'].forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; });
+  fillCover(o.cover);
+  KEEP.forEach(k=>{ if(o[k]!=null && k!=='cover') $(k).value=o[k]; });
+  if (o.cabV !== 2) $('cabang').value = 'MANADO'; // isian lama: pindahkan ke Manado sekali
+  if (o.bMode) document.querySelectorAll('#bMode button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===o.bMode));
+  if (o.addm) document.querySelectorAll('#addm button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===o.addm));
+  if (o.dpMode){ document.querySelectorAll('#dpMode button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===o.dpMode)); $('wrapDpPct').hidden=o.dpMode!=='pct'; $('wrapDpRp').hidden=o.dpMode!=='rp'; }
+}
+
+fillCabang(); fillCover('1 thn AR, 4 thn TLO'); load(); render();
+let t0='sim'; try{ t0 = localStorage.getItem('accTab') || 'sim'; }catch(e){} showTab(VIEWS[t0]?t0:'sim');
+</script>
+</body></html>
